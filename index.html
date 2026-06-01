@@ -6,7 +6,27 @@
 <meta charset="utf-8">
 <title>Hollow Knight</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{background:#000;overflow:hidden}#loading-text{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font:24px Arial}#unity-canvas{width:100vw;height:100vh;display:block}#unity-mobile-warning{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(0,0,0,.9);padding:20px;border-radius:8px;font:14px Arial}#fps-graph{position:fixed;top:12px;left:12px;width:200px;height:70px;background:rgba(0,0,0,.8);border-radius:6px;padding:10px;z-index:9999;transition:.3s}#fps-canvas{width:100%;height:100%;display:block}.savebtn{position:fixed;top:12px;right:12px;padding:10px 18px;cursor:pointer;background:rgba(50,50,50,.85);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:6px;font:14px Arial;z-index:9999;transition:.3s}.savebtn:hover{background:rgba(70,70,70,.95)}.hidden{opacity:0;pointer-events:none}
+*{margin:0;padding:0;box-sizing:border-box}body{background:#000;overflow:hidden}#loading-text{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font:24px Arial}#unity-canvas{display:block}canvas{display:block}.hidden{display:none!important}#fps-graph{position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.8);padding:10px;border:2px solid #0f0;border-radius:5px}#fps-canvas{display:block;background:#000}.savebtn{position:fixed;bottom:10px;left:10px;padding:8px 16px;background:#007acc;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;font-weight:bold;z-index:999}.savebtn:hover{background:#005a9e}
+
+/* Developer Console Panel Styles */
+#dev-panel{position:fixed;bottom:0;left:0;width:100%;background:rgba(0,0,0,0.95);border-top:3px solid #0f0;display:none;flex-direction:column;z-index:10000;font-family:monospace;max-height:400px}#dev-panel.active{display:flex}#panel-header{background:#0f0;color:#000;padding:12px;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:14px}.panel-close{background:none;border:none;color:#000;font-size:18px;cursor:pointer;font-weight:bold;padding:0 8px}.panel-close:hover{background:rgba(0,0,0,0.3)}#panel-content{flex:1;overflow-y:auto;padding:12px;color:#0f0;font-size:13px;line-height:1.5}#panel-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;padding:12px;border-top:1px solid #0f0;background:rgba(0,0,0,0.7)}
+
+.stat-box{background:#0a2a0a;border:1px solid #0f0;border-radius:4px;padding:10px}
+.stat-box-title{color:#0f0;font-weight:bold;margin-bottom:8px;font-size:12px}
+.stat-controls{display:flex;align-items:center;gap:6px;margin:6px 0}
+.stat-label{color:#0ff;font-size:11px;min-width:60px}
+.stat-value{background:#000;border:1px solid #0f0;color:#0f0;padding:4px 6px;min-width:50px;text-align:center;font-size:11px;border-radius:2px;flex:1}
+.stat-btn{background:#0f0;color:#000;border:none;padding:4px 8px;border-radius:2px;cursor:pointer;font-size:10px;font-weight:bold;flex:0 0 auto}.stat-btn:hover{background:#1f1}.stat-btn.minus{background:#ff4444}.stat-btn.minus:hover{background:#ff6666}.stat-btn.plus{background:#44ff44}.stat-btn.plus:hover{background:#66ff66}
+
+#toggle-btn{position:fixed;bottom:50px;right:10px;padding:10px 14px;background:#0f0;color:#000;border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:bold;z-index:999}.toggle-btn:hover{background:#1f1}
+
+.quick-action{background:#007acc;color:#fff;border:none;padding:8px 12px;border-radius:3px;cursor:pointer;font-size:12px;font-weight:bold;width:100%}.quick-action:hover{background:#005a9e}.quick-action.danger{background:#ff4444;color:#fff}.quick-action.danger:hover{background:#ff6666}.quick-action.success{background:#44ff44;color:#000}.quick-action.success:hover{background:#66ff66;color:#000}
+
+#log-output{background:#000;border:1px solid #0f0;border-radius:3px;padding:8px;max-height:200px;overflow-y:auto;font-size:11px;margin-bottom:10px;line-height:1.3}
+.log-entry{color:#0f0;margin:2px 0}
+.log-entry.success{color:#44ff44}
+.log-entry.error{color:#ff4444}
+.log-entry.info{color:#0ff}
 </style>
 </head>
 <body>
@@ -14,7 +34,146 @@
 <div id="unity-mobile-warning">WebGL not supported on mobile</div>
 <canvas id="unity-canvas"></canvas>
 <div id="fps-graph" style="display:none"><canvas id="fps-canvas"></canvas></div>
+
+<!-- Toggle Button -->
+<button id="toggle-btn" onclick="togglePanel()">🎮 Console</button>
+
+<!-- Developer Panel -->
+<div id="dev-panel">
+  <div id="panel-header">
+    <span>Game Stats Editor</span>
+    <button class="panel-close" onclick="togglePanel()">✕</button>
+  </div>
   
+  <div id="panel-content">
+    <div id="log-output"></div>
+    <div id="panel-controls">
+      <!-- Health Controls -->
+      <div class="stat-box">
+        <div class="stat-box-title">❤️ Health</div>
+        <div class="stat-controls">
+          <span class="stat-label">Current:</span>
+          <input type="text" id="health-display" class="stat-value" readonly>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="stat-btn minus" onclick="modifyStat('health', -1)">-1</button>
+          <button class="stat-btn plus" onclick="modifyStat('health', 1)">+1</button>
+          <button class="stat-btn plus" onclick="modifyStat('health', 5)">+5</button>
+        </div>
+      </div>
+
+      <!-- Max Health Controls -->
+      <div class="stat-box">
+        <div class="stat-box-title">❤️ Max Health</div>
+        <div class="stat-controls">
+          <span class="stat-label">Current:</span>
+          <input type="text" id="maxHealth-display" class="stat-value" readonly>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="stat-btn minus" onclick="modifyStat('maxHealth', -1)">-1</button>
+          <button class="stat-btn plus" onclick="modifyStat('maxHealth', 1)">+1</button>
+          <button class="stat-btn plus" onclick="modifyStat('maxHealth', 5)">+5</button>
+        </div>
+      </div>
+
+      <!-- Mask Controls -->
+      <div class="stat-box">
+        <div class="stat-box-title">🛡️ Mask</div>
+        <div class="stat-controls">
+          <span class="stat-label">Current:</span>
+          <input type="text" id="mask-display" class="stat-value" readonly>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="stat-btn minus" onclick="modifyStat('mask', -1)">-1</button>
+          <button class="stat-btn plus" onclick="modifyStat('mask', 1)">+1</button>
+          <button class="stat-btn plus" onclick="modifyStat('mask', 10)">+10</button>
+        </div>
+      </div>
+
+      <!-- Vessel Controls -->
+      <div class="stat-box">
+        <div class="stat-box-title">🔷 Vessel</div>
+        <div class="stat-controls">
+          <span class="stat-label">Current:</span>
+          <input type="text" id="vessel-display" class="stat-value" readonly>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="stat-btn minus" onclick="modifyStat('vessel', -1)">-1</button>
+          <button class="stat-btn plus" onclick="modifyStat('vessel', 1)">+1</button>
+          <button class="stat-btn plus" onclick="modifyStat('vessel', 10)">+10</button>
+        </div>
+      </div>
+
+      <!-- Charm Controls -->
+      <div class="stat-box">
+        <div class="stat-box-title">✨ Charm</div>
+        <div class="stat-controls">
+          <span class="stat-label">Current:</span>
+          <input type="text" id="charm-display" class="stat-value" readonly>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="stat-btn minus" onclick="modifyStat('charm', -1)">-1</button>
+          <button class="stat-btn plus" onclick="modifyStat('charm', 1)">+1</button>
+          <button class="stat-btn plus" onclick="modifyStat('charm', 10)">+10</button>
+        </div>
+      </div>
+
+      <!-- Ore Controls -->
+      <div class="stat-box">
+        <div class="stat-box-title">⛏️ Ore</div>
+        <div class="stat-controls">
+          <span class="stat-label">Current:</span>
+          <input type="text" id="ore-display" class="stat-value" readonly>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="stat-btn minus" onclick="modifyStat('ore', -1)">-1</button>
+          <button class="stat-btn plus" onclick="modifyStat('ore', 1)">+1</button>
+          <button class="stat-btn plus" onclick="modifyStat('ore', 10)">+10</button>
+        </div>
+      </div>
+
+      <!-- Geo Controls -->
+      <div class="stat-box">
+        <div class="stat-box-title">💰 Geo</div>
+        <div class="stat-controls">
+          <span class="stat-label">Current:</span>
+          <input type="text" id="geo-display" class="stat-value" readonly>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="stat-btn minus" onclick="modifyStat('geo', -50)">-50</button>
+          <button class="stat-btn plus" onclick="modifyStat('geo', 50)">+50</button>
+          <button class="stat-btn plus" onclick="modifyStat('geo', 500)">+500</button>
+        </div>
+      </div>
+
+      <!-- Notches Controls -->
+      <div class="stat-box">
+        <div class="stat-box-title">📌 Notches</div>
+        <div class="stat-controls">
+          <span class="stat-label">Current:</span>
+          <input type="text" id="notches-display" class="stat-value" readonly>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="stat-btn minus" onclick="modifyStat('notches', -1)">-1</button>
+          <button class="stat-btn plus" onclick="modifyStat('notches', 1)">+1</button>
+          <button class="stat-btn plus" onclick="modifyStat('notches', 10)">+10</button>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="stat-box" style="grid-column:span 1">
+        <div class="stat-box-title">⚡ Quick Actions</div>
+        <button class="quick-action success" onclick="maxAllStats()">Max All</button>
+      </div>
+
+      <div class="stat-box" style="grid-column:span 1">
+        <div class="stat-box-title">🔄 Reset</div>
+        <button class="quick-action danger" onclick="resetStats()">Reset All</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   const lt = document.getElementById("loading-text"),
     cv = document.getElementById("unity-canvas"),
@@ -112,7 +271,94 @@ function gp(f, s, e) {
     return Array.from({
         length: e - s + 1
     }, (_, i) => `${f}.part${s+i}`);
-}(async () => {
+}
+
+// Game Stats System
+let panelOpen = false;
+const devPanel = document.getElementById('dev-panel');
+const logOutput = document.getElementById('log-output');
+
+window.gameStats = {
+    health: 5,
+    maxHealth: 5,
+    mask: 0,
+    vessel: 0,
+    charm: 0,
+    ore: 0,
+    geo: 0,
+    notches: 0
+};
+
+function togglePanel() {
+    panelOpen = !panelOpen;
+    if (panelOpen) {
+        devPanel.classList.add('active');
+    } else {
+        devPanel.classList.remove('active');
+    }
+}
+
+function addLog(message, type = 'log') {
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.textContent = message;
+    logOutput.appendChild(entry);
+    logOutput.scrollTop = logOutput.scrollHeight;
+    
+    // Keep only last 20 log entries
+    while (logOutput.children.length > 20) {
+        logOutput.removeChild(logOutput.firstChild);
+    }
+}
+
+function updateDisplay(stat) {
+    const element = document.getElementById(`${stat}-display`);
+    if (element) {
+        element.value = window.gameStats[stat];
+    }
+}
+
+function modifyStat(stat, amount) {
+    window.gameStats[stat] = Math.max(0, window.gameStats[stat] + amount);
+    updateDisplay(stat);
+    addLog(`${stat} updated to ${window.gameStats[stat]}`, 'info');
+}
+
+function maxAllStats() {
+    for (const stat in window.gameStats) {
+        window.gameStats[stat] = 999;
+        updateDisplay(stat);
+    }
+    addLog('All stats maximized!', 'success');
+}
+
+function resetStats() {
+    window.gameStats = {
+        health: 5,
+        maxHealth: 5,
+        mask: 0,
+        vessel: 0,
+        charm: 0,
+        ore: 0,
+        geo: 0,
+        notches: 0
+    };
+    
+    for (const stat in window.gameStats) {
+        updateDisplay(stat);
+    }
+    addLog('All stats reset to defaults', 'success');
+}
+
+// Initialize display
+function initializeDisplay() {
+    for (const stat in window.gameStats) {
+        updateDisplay(stat);
+    }
+    addLog('Game Stats Editor Ready', 'success');
+}
+
+(async () => {
     const [du, wu] = await Promise.all([mf(gp("Build/hktruffled.data", 1, 45)), mf(gp("Build/hktruffled.wasm", 1, 2))]), sc = document.createElement("script");
     sc.src = "Build/hktruffled.loader.js";
     sc.onload = () => {
@@ -124,11 +370,13 @@ function gp(f, s, e) {
             companyName: "Team Cherry",
             productName: "Hollow Knight",
             productVersion: "1.0"
-        }).then(() => {
+        }).then((instance) => {
+            window.unityInstance = instance;
             lt.remove();
             asb();
             fg.style.display = 'block';
             uf();
+            initializeDisplay();
         }).catch(alert);
     };
     document.body.appendChild(sc);
@@ -159,6 +407,7 @@ function ga(d, s) {
         r.onerror = () => bd(r.error);
     });
 }
+
 async function sdl() {
     try {
         const dbs = await indexedDB.databases();
